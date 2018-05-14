@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 import functools
 import sys
+from rawdata_to_df import raw_to_df
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+  '--analysis',
+  type=str,
+ )
+parser.add_argument(
+   '--trans',
+  type=str
+)
+args = parser.parse_args()
+
+
 
 
 
@@ -14,45 +29,18 @@ ACL_FIELD = {
     'IPV6_DST': [],
     'PORT_SRC': [],
     'PORT_DST': [],
+    'MATCH_TIMES':[]
     }
 
-
-with open("test100", "r") as f:
-    for line in f:
-        temp = line.split("\t")
-        IP_SRC = temp[0][1:]
-        IP_DST = temp[1]
-        PORT_SRC = temp[2].replace(" ","")
-        PORT_DST = temp[3].replace(" ","")
-        IP_PROTO = temp[4]
-        if ":" not in IP_SRC :
-            ACL_FIELD["ETH_TYPE"].append("0x0800")
-            ACL_FIELD["IPV4_SRC"].append(IP_SRC)
-        else:
-            ACL_FIELD["ETH_TYPE"].append("0x86DD")
-            ACL_FIELD["IPV6_SRC"].append(IP_SRC)
-        if ":" not in IP_DST :
-            # ACL_FIELD["ETH_TYPE"].append("0x0800")
-            ACL_FIELD["IPV4_DST"].append(IP_DST)
-        else:
-            # ACL_FIELD["ETH_TYPE"].append("0x86DD")
-            ACL_FIELD["IPV6_DST"].append(IP_DST)
-
-        # temp
-        ACL_FIELD["IPV6_SRC"].append("0")
-        ACL_FIELD["IPV6_DST"].append("0")
-        # temp
-        ACL_FIELD["PORT_SRC"].append(PORT_SRC)
-        ACL_FIELD["PORT_DST"].append(PORT_DST)
-        ACL_FIELD["IP_PROTO"].append(IP_PROTO)
-
-    # print (ACL_FIELD)
+# df = raw_to_df(args.i)
 
 
-df=pd.DataFrame(ACL_FIELD)
+
 # print(df)
-tf_table = df.copy()
-acl_length = len(tf_table)
+rule_table_analyed = pd.read_csv(args.analysis,dtype ={'IPV6_SRC':str,'IPV6_DST':str,'IP_PROTO':str,'PORT_SRC':str,'PORT_DST':str})
+# df.to_csv("rule_table",index = False)
+# rule_table_analyed = df.copy()
+acl_length = len(rule_table_analyed)
 zero_matrix = np.repeat(0,acl_length)
 
 def eth_type_f(cell):
@@ -62,13 +50,13 @@ def eth_type_f(cell):
         return 1
 
 def ipv4_src_f(cell):
-    if cell == '':
+    if cell == '0.0.0.0/0':
         return 0
     else:
         return 1
 
 def ipv4_dst_f(cell):
-    if cell == '':
+    if cell == '0.0.0.0/0':
         return 0
     else:
         return 1
@@ -102,19 +90,19 @@ def port_dst_f(cell):
     else:
         return 1
 
-tf_table["ETH_TYPE"] = tf_table["ETH_TYPE"].map(eth_type_f)
-tf_table["IP_PROTO"] = tf_table["IP_PROTO"].map(ip_proto_f)
-tf_table["IPV4_SRC"] = tf_table["IPV4_SRC"].map(ipv4_src_f)
-tf_table["IPV4_DST"] = tf_table["IPV4_DST"].map(ipv4_dst_f)
-tf_table["IPV6_SRC"] = tf_table["IPV6_SRC"].map(ipv6_src_f)
-tf_table["IPV6_DST"] = tf_table["IPV6_DST"].map(ipv6_dst_f)
-tf_table["PORT_SRC"] = tf_table["PORT_SRC"].map(port_src_f)
-tf_table["PORT_DST"] = tf_table["PORT_DST"].map(port_dst_f)
+rule_table_analyed["ETH_TYPE"] = rule_table_analyed["ETH_TYPE"].map(eth_type_f)
+rule_table_analyed["IP_PROTO"] = rule_table_analyed["IP_PROTO"].map(ip_proto_f)
+rule_table_analyed["IPV4_SRC"] = rule_table_analyed["IPV4_SRC"].map(ipv4_src_f)
+rule_table_analyed["IPV4_DST"] = rule_table_analyed["IPV4_DST"].map(ipv4_dst_f)
+rule_table_analyed["IPV6_SRC"] = rule_table_analyed["IPV6_SRC"].map(ipv6_src_f)
+rule_table_analyed["IPV6_DST"] = rule_table_analyed["IPV6_DST"].map(ipv6_dst_f)
+rule_table_analyed["PORT_SRC"] = rule_table_analyed["PORT_SRC"].map(port_src_f)
+rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
 
-tf_table.insert(loc = 0, column='EST_SRC', value=zero_matrix)
-tf_table.insert(loc = 0, column='EST_DST', value=zero_matrix)
-tf_table.insert(loc = 0, column='IN_PORT', value=zero_matrix)
-print(tf_table)
+rule_table_analyed.insert(loc = 0, column='EST_SRC', value=zero_matrix)
+rule_table_analyed.insert(loc = 0, column='EST_DST', value=zero_matrix)
+rule_table_analyed.insert(loc = 0, column='IN_PORT', value=zero_matrix)
+# print(tf_table)
 """
 """
 
@@ -193,26 +181,26 @@ IP_PROTO = pd.DataFrame({
 # IPV4_DST = pd.DataFrame([[0,0,0,0,0,0,1,0,0,0,0]], columns=COLUMN_NAMES)
 
 
-num_entry = 100
-for i in range(num_entry):
-    entry_select = np.random.randint(3)
-    noise = np.random.randint(100)
-    if entry_select == 0:
-        tf_table = tf_table.append(IN_PORT, ignore_index=True)
-    if entry_select == 1:
-        tf_table = tf_table.append(EST_DST, ignore_index=True)
-    if entry_select == 2:
-        tf_table = tf_table.append(IPV4_DST, ignore_index=True)
-    if noise == 0 :
-        # noise_pd = pd.DataFrame(np.random.randint(low=0, high=2, size=(1, 13)),columns = COLUMN_NAMES)
-        tf_table = tf_table.append(IP_PROTO, ignore_index=True)
+# num_entry = 100
+# for i in range(num_entry):
+#     entry_select = np.random.randint(3)
+#     noise = np.random.randint(100)
+#     if entry_select == 0:
+#         tf_table = tf_table.append(IN_PORT, ignore_index=True)
+#     if entry_select == 1:
+#         tf_table = tf_table.append(EST_DST, ignore_index=True)
+#     if entry_select == 2:
+#         tf_table = tf_table.append(IPV4_DST, ignore_index=True)
+#     if noise == 0 :
+#         # noise_pd = pd.DataFrame(np.random.randint(low=0, high=2, size=(1, 13)),columns = COLUMN_NAMES)
+#         tf_table = tf_table.append(IP_PROTO, ignore_index=True)
 
 
 
 
-tf_table.to_csv("tf_table",index = False)
+rule_table_analyed.to_csv(args.trans,index = False)
 
-print (tf_table)
+# print (tf_table)
 
 
 

@@ -7,6 +7,15 @@ import pandas as pd
 import numpy as np
 import functools
 import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+   '--trans',
+  type=str
+)
+args = parser.parse_args()
 # In[24]:
 
 """
@@ -24,7 +33,11 @@ BIT_MAP = {
     'IPV6_DST': 128,
     'PORT_SRC': 16,
     'PORT_DST': 16,
+    'MATCH_TIMES':0
     }
+METATADA = ['MATCH_TIMES']
+
+
 COLUMN_NAMES = BIT_MAP.keys()
 HIGH_DIM = 1
 MIDIUM_DIM = 2
@@ -103,16 +116,33 @@ Genterating the original table
 def find_used(entry_row):
     used_set = []
     for column in COLUMN_NAMES:
-        value = entry_row[column]
-        if (value == 1):
-            used_set.append(column)
+        if column not in METATADA:
+            value = entry_row[column]
+            if (value == 1):
+                used_set.append(column)
     sorted(used_set)
     return used_set
 
 
 # In[26]:
 def reduce_df_column(raw_series):
-    used_fields = raw_series[raw_series == 1]
+    mask = (raw_series == 1)
+    mask[-1] = True
+    used_fields = raw_series[mask]
+    # used_fields = raw_series[
+    #     raw_series['IN_PORT'] == 1 |
+    #     raw_series['EST_DST'] == 1 |
+    #     raw_series['EST_SRC'] == 1 |
+    #     raw_series['ETH_TYPE'] == 1 |
+    #     raw_series['IP_PROTO'] == 1 |
+    #     raw_series['IPV4_SRC'] == 1 |
+    #     raw_series['IPV4_DST'] == 1 |
+    #     raw_series['IPV6_SRC'] == 1 |
+    #     raw_series['IPV6_DST'] == 1 |
+    #     raw_series['PORT_SRC'] == 1 |
+    #     raw_series['PORT_DST'] == 1
+    # ]
+    # print (used_fields)
     return used_fields.to_frame().T
 
 def sort_info(raw_info, by_key):
@@ -143,8 +173,11 @@ class EntryTable:
         self.weight = 0
         self.frequency = 0
         self.size = 0
+        self.matchtimes = 0
 
     def append(self, add_entry):
+        print (add_entry['MATCH_TIMES'])
+        self.matchtimes = self.matchtimes + int(add_entry['MATCH_TIMES'])
         self.df = self.df.append(add_entry, ignore_index=True)
 
     def update(self,time,entry_bits):
@@ -154,6 +187,7 @@ class EntryTable:
         self.total_used_bit_count = length * self.used_bit_count
         self.dict['total_unused_bit_count'] = length * self.unused_bit_count
         self.frequency = self.dict['reduced_df_length']/time
+        # self.matchtimes =
 
     def unused_count(self,bit_map,unused_fields):
         self.unused_bit_count = functools.reduce((lambda acc, field: acc + bit_map[field]), unused_fields, 0)
@@ -177,6 +211,7 @@ class EntryTable:
                 +" unused bits in an entry :　%s\n"%(self.unused_bit_count)
                 +" total unused bits :　%s\n" % (self.dict['total_unused_bit_count'])
                 +" frequency : %s\n" %(self.frequency)
+                +" matchtimes : %s\n" %(self.matchtimes)
                 + "===============\n")
 
         # return self.key + '\n'
@@ -188,7 +223,7 @@ class EntryTable:
 
 
 # open_table_test = entry_generator(TEST_CASE,1000)
-open_table = pd.read_csv("tf_table")
+open_table = pd.read_csv(args.trans)
 print(open_table)
 entryTableMap = {
 'IN_PORT':EntryTable(['IN_PORT'],unused_bit_count = ENTRY_BITS-32),
