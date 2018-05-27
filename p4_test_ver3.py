@@ -8,6 +8,7 @@ import numpy as np
 import functools
 import sys
 import argparse
+import math
 
 parser = argparse.ArgumentParser()
 
@@ -15,26 +16,49 @@ parser.add_argument(
    '--trans',
   type=str
 )
+
+parser.add_argument(
+   '--sizecase',
+   dest = 'case',
+  type=str
+)
+
 args = parser.parse_args()
 # In[24]:
 
 """
 Fields bit
 """
+# BIT_MAP = {
+#     'IN_PORT':32,
+#     'EST_DST': 48,
+#     'EST_SRC': 48,
+#     'ETH_TYPE': 16,
+#     'IP_PROTO': 8,
+#     'IPV4_SRC': 32,
+#     'IPV4_DST': 32,
+#     'IPV6_SRC': 128,
+#     'IPV6_DST': 128,
+#     'PORT_SRC': 16,
+#     'PORT_DST': 16,
+#     'FLAG' : 8,
+#     'MATCH_TIMES':0
+# }
+
 BIT_MAP = {
-    'IN_PORT':32,
-    'EST_DST': 48,
-    'EST_SRC': 48,
-    'ETH_TYPE': 16,
+    'IN_PORT':0,
+    'EST_DST': 0,
+    'EST_SRC': 0,
     'IP_PROTO': 8,
     'IPV4_SRC': 32,
     'IPV4_DST': 32,
-    'IPV6_SRC': 128,
-    'IPV6_DST': 128,
     'PORT_SRC': 16,
     'PORT_DST': 16,
+    'FLAG' : 8,
     'MATCH_TIMES':0
     }
+
+
 METATADA = ['MATCH_TIMES']
 
 
@@ -45,71 +69,15 @@ LOW_DIM = 3
 RANDOM = 4
 TEST_CASE = 5
 TIME = 1000 # miniseconds
-THRESHOLD = 1 # weighting threshold
-ENTRY_BITS = 504
-
+THRESHOLD = 26 # weighting threshold
+ENTRY_BITS = 112
+CASE = 1
+MEMORY_SIZE = 336000
 
 """
 Genterating the original table
 """
 
-# IN_PORT = pd.DataFrame([[1,0,0,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# EST_DST = pd.DataFrame([[0,1,0,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# EST_SRC = pd.DataFrame([[0,0,1,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# EST_DST_EST_SRC= pd.DataFrame([[0,1,1,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# # IP_DST = pd.DataFrame([[0,0,0,0,0,0,1,0,0,0,0]], columns=COLUMN_NAMES)
-# IPV4_SRC = pd.DataFrame([[0,0,0,0,0,1,0,0,0,0,0]], columns=COLUMN_NAMES)
-# IPV4_DST = pd.DataFrame([[0,0,0,0,0,0,1,0,0,0,0]], columns=COLUMN_NAMES)
-# ETH_TYPE_IPV4_SRC = pd.DataFrame([[0,0,0,1,0,1,0,0,0,0,0]], columns=COLUMN_NAMES)
-# ETH_TYPE_IPV4_DST = pd.DataFrame([[0,0,0,1,0,0,1,0,0,0,0]], columns=COLUMN_NAMES)
-# ETH_TYPE_IPV4_SRC_IPV4_DST = pd.DataFrame([[0,0,0,1,0,1,1,0,0,0,0]], columns=COLUMN_NAMES)
-# IPV6_SRC = pd.DataFrame([[0,0,0,1,0,0,0,1,0,0,0]], columns=COLUMN_NAMES)
-# IPV6_DST = pd.DataFrame([[0,0,0,1,0,0,0,0,1,0,0]], columns=COLUMN_NAMES)
-# ETH_TYPE_IPV6_SRC_IPV6_DST = pd.DataFrame([[0,0,0,1,0,0,0,1,1,0,0]], columns=COLUMN_NAMES)
-# PORT_SRC = pd.DataFrame([[0,0,0,0,1,0,0,0,0,1,0]], columns=COLUMN_NAMES)
-# PORT_DST = pd.DataFrame([[0,0,0,0,1,0,0,0,0,0,1]], columns=COLUMN_NAMES)
-# PORT_SRC_PORT_DST = pd.DataFrame([[0,0,0,0,1,0,0,0,0,1,1]], columns=COLUMN_NAMES)
-# IP_PROTO = pd.DataFrame([[0,0,0,0,1,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# UDP_SRC = pd.DataFrame([[0,0,0,0,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# UDP_DST = pd.DataFrame([[0,0,0,0,0,0,0,0,0,0,0,0]], columns=COLUMN_NAMES)
-# def entry_generator(case_selection, num_entry = 30):
-#     """
-#     Test
-#     """
-#     if case_selection == TEST_CASE:
-#         """
-#         high test case
-#         """
-#         open_table = pd.DataFrame(columns = COLUMN_NAMES)
-#         for i in range(num_entry):
-#             entry_select = np.random.randint(9)
-#             noise = np.random.randint(100)
-#             if entry_select == 0:
-#                 open_table = open_table.append(IN_PORT, ignore_index=True)
-#             if entry_select == 1:
-#                 open_table = open_table.append(EST_DST, ignore_index=True)
-#             if entry_select == 2:
-#                 open_table = open_table.append(IPV4_DST, ignore_index=True)
-#             if entry_select == 3:
-#                 open_table = open_table.append(ETH_TYPE_IPV4_SRC_IPV4_DST, ignore_index=True)
-#             if entry_select == 4:
-#                 open_table = open_table.append(ETH_TYPE_IPV4_SRC_IPV4_DST, ignore_index=True)
-#             if entry_select == 5:
-#                 open_table = open_table.append(ETH_TYPE_IPV4_SRC_IPV4_DST, ignore_index=True)
-#             if entry_select == 6 :
-#                 open_table = open_table.append(ETH_TYPE_IPV6_SRC_IPV6_DST, ignore_index=True)
-#             if entry_select == 7  :
-#                 open_table = open_table.append(PORT_SRC_PORT_DST, ignore_index=True)
-#             if entry_select == 8  :
-#                 open_table = open_table.append(PORT_SRC_PORT_DST, ignore_index=True)
-#         #     if entry_select == 6 :
-#         #         open_table = open_table.append(MAC_IPV6_TCP, ignore_index=True)
-#         #     if entry_select == 7:
-#         #         open_table = open_table.append(MAC_IPV6_UDP, ignore_index=True)
-#             if noise == 10 :
-#                 # noise_pd = pd.DataFrame(np.random.randint(low=0, high=2, size=(1, 13)),columns = COLUMN_NAMES)
-#                 open_table = open_table.append(IP_PROTO, ignore_index=True)
-#         return open_table
 
 
 
@@ -153,8 +121,17 @@ def sort_info(raw_info, by_key):
         key=(lambda x: x[1][by_key]),
         reverse=True
     )
+    # print (sorted_list,'\n')
+    weight = len(entryTableMap)
     for item_value in sorted_list:
+        item_value[1].weight_cal(weight)
         sorted_info[item_value[0]] = item_value[1]
+        weight = weight - 1
+
+        # print(item_value[0], item_value[1]['total_unused_bit_count'])
+
+
+    # print (sorted_info,'\n')
     return sorted_info
 
 """
@@ -163,30 +140,30 @@ Initial
 class EntryTable:
     def __init__(self,used_fields,is_fixed = False,unused_bit_count = 0):
         self.df = pd.DataFrame(columns = used_fields)
-        self.dict= {'total_unused_bit_count': 0,'reduced_df_length': 0,}
+        self.dict= {'total_unused_bit_count': 0,'reduced_df_length': 0,'matchtimes':0,'weight':0,'used_bit_count':0}
         self.key = ','.join(used_fields)
-        self.used_bit_count = 0
+        # self.used_bit_count = 0
         self.unused_bit_count = unused_bit_count
         self.total_used_bit_count = 0
         # self.total_unused_bit_count = 0
         # self.reduced_df_length = 0
-        self.weight = 0
+        # self.weight = 0
         self.frequency = 0
         self.size = 0
         self.matchtimes = 0
 
     def append(self, add_entry):
-        print (add_entry['MATCH_TIMES'])
-        self.matchtimes = self.matchtimes + int(add_entry['MATCH_TIMES'])
+        # print (add_entry['MATCH_TIMES'])
+        self.dict['matchtimes'] = self.dict['matchtimes']+ int(add_entry['MATCH_TIMES'])
         self.df = self.df.append(add_entry, ignore_index=True)
 
     def update(self,time,entry_bits):
         length = len(self.df)
         self.dict['reduced_df_length'] = length
-        self.used_bit_count = entry_bits - self.unused_bit_count
-        self.total_used_bit_count = length * self.used_bit_count
+        self.dict['used_bit_count'] = entry_bits - self.unused_bit_count
+        self.total_used_bit_count = length * self.dict['used_bit_count']
         self.dict['total_unused_bit_count'] = length * self.unused_bit_count
-        self.frequency = self.dict['reduced_df_length']/time
+        # self.frequency = self.matchtimes/time
         # self.matchtimes =
 
     def unused_count(self,bit_map,unused_fields):
@@ -194,7 +171,7 @@ class EntryTable:
 
 
     def weight_cal(self,weight_val):
-        self.weight = self.weight + weight_val
+        self.dict['weight'] = self.dict['weight']  + weight_val
 
     def __getitem__(self,key):
         return self.dict[key]
@@ -204,14 +181,14 @@ class EntryTable:
     def __repr__(self):
         # return self.df.to_string()
         return ("%s\n"  %(self.key)
-                +" weight : %s\n" %(self.weight)
+                +" weight : %s\n" %(self.dict['weight'] )
                 +" numbers of entry :　%s\n" % (self.dict['reduced_df_length'])
-                +" used bits in an entry :　%s\n"%(self.used_bit_count)
+                +" used bits in an entry :　%s\n"%(self.dict['used_bit_count'])
                 +" total used bits :　%s\n" % (self.total_used_bit_count)
                 +" unused bits in an entry :　%s\n"%(self.unused_bit_count)
                 +" total unused bits :　%s\n" % (self.dict['total_unused_bit_count'])
                 +" frequency : %s\n" %(self.frequency)
-                +" matchtimes : %s\n" %(self.matchtimes)
+                +" matchtimes : %s\n" %(self.dict['matchtimes'])
                 + "===============\n")
 
         # return self.key + '\n'
@@ -224,11 +201,14 @@ class EntryTable:
 
 # open_table_test = entry_generator(TEST_CASE,1000)
 open_table = pd.read_csv(args.trans)
-print(open_table)
+
+total_rules = len(open_table)
+
+# print(open_table)
 entryTableMap = {
-'IN_PORT':EntryTable(['IN_PORT'],unused_bit_count = ENTRY_BITS-32),
-'EST_DST':EntryTable(['EST_DST'],unused_bit_count = ENTRY_BITS-48),
-'IPV4_DST':EntryTable(['IPV4_DST'],unused_bit_count = ENTRY_BITS-32),
+'IN_PORT':EntryTable(['IN_PORT'],unused_bit_count = 0),
+'EST_DST':EntryTable(['EST_DST'],unused_bit_count = 0),
+'IPV4_DST':EntryTable(['IPV4_DST'],unused_bit_count = 0),
 }
 
 for idx, row in open_table.iterrows():
@@ -262,48 +242,110 @@ for key in entryTableMap:
 
 sorted_info_by_total = sort_info(entryTableMap, 'total_unused_bit_count')
 sorted_info_by_length = sort_info(entryTableMap, 'reduced_df_length')
+sorted_info_by_matchtimes = sort_info(entryTableMap, 'matchtimes')
 
 # print(sorted_info_by_total, '\n\n============\n\n')
 # print(sorted_info_by_length, '\n\n============\n\n')
 
 # for key in info:
 #     info[key]['frequency'] = info[key]['reduced_TF_df_length']/TIME
-weight = len(entryTableMap)
-for key in sorted_info_by_total:
-    entryTableMap[key].weight_cal(weight)
-    weight = weight - 1
 
-weight = len(entryTableMap)
-for key in sorted_info_by_length:
-    entryTableMap[key].weight_cal(weight)
-    weight = weight - 1
-
+# weight = len(entryTableMap)
+# for key in sorted_info_by_total:
+#     entryTableMap[key].weight_cal(weight)
+#     weight = weight - 1
+#     print(key,'=======',entryTableMap[key]['total_unused_bit_count'],'========',weight)
+#
+#
+# weight = len(entryTableMap)
+# for key in sorted_info_by_length:
+#     entryTableMap[key].weight_cal(weight)
+#     weight = weight - 1
+#     print(key,'**********',entryTableMap[key]['reduced_df_length'],'**********',weight)
+#
+# weight = len(entryTableMap)
+# for key in sorted_info_by_matchtimes:
+#     entryTableMap[key].weight_cal(weight)
+#     weight = weight - 1
+#     print(key,'@@@@@@@@@@@@@@@@@@',entryTableMap[key]['matchtimes'],'@@@@@@@@@@@@@@@',weight)
+"""
+Print result
+"""
 print(entryTableMap)
-sys.exit()
 
 # print(info,'\n\n============\n\n')
 
 """
 Decide Size and table
 """
-origanied_table = {}
-original_table = {}
-origanied_size = 0
-for key in info:
-    if info[key]['weight']>= THRESHOLD:
-        origanied_table[key] = info[key]
-    if info[key]['weight'] < THRESHOLD:
-        original_table[key] = info[key]
+# origanized_table = {}
+# original_table = {}
+# origanied_size = 0
+# for key in info:
+#     if info[key]['weight']>= THRESHOLD:
+#         origanized_table[key] = info[key]
+#     if info[key]['weight'] < THRESHOLD:
+#         original_table[key] = info[key]
+#
+# for key in origanized_table:
+#     origanized_table[key]['size'] = origanized_table[key]['total_used_bit_count']*(1+origanized_table[key]['frequency'])
+#     origanied_size = origanied_size + origanized_table[key]['size']
+#
+# for key in original_table:
+#     original_table[key]['size'] = ENTRY_BITS*len(open_table)-origanied_size
 
-for key in origanied_table:
-    origanied_table[key]['size'] = origanied_table[key]['total_used_bit_count']*(1+origanied_table[key]['frequency'])
-    origanied_size = origanied_size + origanied_table[key]['size']
-
-for key in original_table:
-    original_table[key]['size'] = ENTRY_BITS*len(open_table)-origanied_size
-
+def decide_table_size(case, entry,memory_size,table_counts,total_rules):
+    if case == 'equal':
+        return math.floor(memory_size/table_counts)
+    if case == 'mine':
+        return entry['used_bit_count']*entry['reduced_df_length']*(1+(float(entry['reduced_df_length'])/total_rules))
 
 
 
-print(origanied_table,'\n\n============\n\n')
-print(original_table,'\n\n============\n\n')
+
+
+
+schemas = []
+weights = []
+tablesizes = []
+
+filteredEntryTableMap = {}
+for key in entryTableMap :
+    # print entryTableMap
+    if entryTableMap[key]['weight'] > THRESHOLD :
+        schemas.append(key.replace(',','$'))
+        weights.append(entryTableMap[key]['weight'])
+        filteredEntryTableMap[key] = entryTableMap[key]
+
+
+table_counts = len(schemas)+1
+memory_size = MEMORY_SIZE
+for key in entryTableMap :
+    # print entryTableMap
+    if entryTableMap[key]['weight'] > THRESHOLD :
+        tablesizes.append(decide_table_size(args.case,entryTableMap[key],memory_size,table_counts,total_rules))
+
+
+special_table_size = memory_size - np.sum(tablesizes)
+schemas.append('IP_PROTO$IPV4_SRC$IPV4_DST$PORT_SRC$PORT_DST$FLAG')
+weights.append(0)
+
+if args.case == 'equal' :
+    tablesizes.append(math.floor(memory_size/table_counts))
+if args.case == 'mine' :
+    tablesizes.append(special_table_size)
+
+
+df_org = pd.DataFrame({
+    'schema': schemas,
+    'weights': weights,
+    'tablesize': tablesizes,
+})
+
+# print (total_rules)
+#
+# print(df_org)
+
+df_org.to_csv('org_table.csv')
+
+sys.exit()

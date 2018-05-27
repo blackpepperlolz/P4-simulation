@@ -20,15 +20,26 @@ args = parser.parse_args()
 
 
 
+# ACL_FIELD = {
+#     'ETH_TYPE': [],
+#     'IP_PROTO': [],
+#     'IPV4_SRC': [],
+#     'IPV4_DST': [],
+#     'IPV6_SRC': [],
+#     'IPV6_DST': [],
+#     'PORT_SRC': [],
+#     'PORT_DST': [],
+#     'MATCH_TIMES':[]
+#     }
+
+
 ACL_FIELD = {
-    'ETH_TYPE': [],
     'IP_PROTO': [],
     'IPV4_SRC': [],
     'IPV4_DST': [],
-    'IPV6_SRC': [],
-    'IPV6_DST': [],
     'PORT_SRC': [],
     'PORT_DST': [],
+    'FLAG':[],
     'MATCH_TIMES':[]
     }
 
@@ -37,7 +48,8 @@ ACL_FIELD = {
 
 
 # print(df)
-rule_table_analyed = pd.read_csv(args.analysis,dtype ={'IPV6_SRC':str,'IPV6_DST':str,'IP_PROTO':str,'PORT_SRC':str,'PORT_DST':str})
+# rule_table_analyed = pd.read_csv(args.analysis,dtype ={'IPV6_SRC':str,'IPV6_DST':str,'IP_PROTO':str,'PORT_SRC':str,'PORT_DST':str})
+rule_table_analyed = pd.read_csv(args.analysis,dtype ={'IPV4_SRC':str,'IPV4_DST':str,'IP_PROTO':str,'PORT_SRC':str,'PORT_DST':str,'FLAG':str})
 # df.to_csv("rule_table",index = False)
 # rule_table_analyed = df.copy()
 acl_length = len(rule_table_analyed)
@@ -90,14 +102,23 @@ def port_dst_f(cell):
     else:
         return 1
 
-rule_table_analyed["ETH_TYPE"] = rule_table_analyed["ETH_TYPE"].map(eth_type_f)
+def flag_dst_f(cell):
+    if cell == '0x0000/0x0000':
+        return 0
+    else:
+        return 1
+
+
+# rule_table_analyed["ETH_TYPE"] = rule_table_analyed["ETH_TYPE"].map(eth_type_f)
 rule_table_analyed["IP_PROTO"] = rule_table_analyed["IP_PROTO"].map(ip_proto_f)
 rule_table_analyed["IPV4_SRC"] = rule_table_analyed["IPV4_SRC"].map(ipv4_src_f)
 rule_table_analyed["IPV4_DST"] = rule_table_analyed["IPV4_DST"].map(ipv4_dst_f)
-rule_table_analyed["IPV6_SRC"] = rule_table_analyed["IPV6_SRC"].map(ipv6_src_f)
-rule_table_analyed["IPV6_DST"] = rule_table_analyed["IPV6_DST"].map(ipv6_dst_f)
+# rule_table_analyed["IPV6_SRC"] = rule_table_analyed["IPV6_SRC"].map(ipv6_src_f)
+# rule_table_analyed["IPV6_DST"] = rule_table_analyed["IPV6_DST"].map(ipv6_dst_f)
 rule_table_analyed["PORT_SRC"] = rule_table_analyed["PORT_SRC"].map(port_src_f)
 rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
+rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
+rule_table_analyed["FLAG"] = rule_table_analyed["FLAG"].map(flag_dst_f)
 
 rule_table_analyed.insert(loc = 0, column='EST_SRC', value=zero_matrix)
 rule_table_analyed.insert(loc = 0, column='EST_DST', value=zero_matrix)
@@ -118,6 +139,7 @@ BIT_MAP = {
     'IPV6_DST': 128,
     'PORT_SRC': 16,
     'PORT_DST': 16,
+    'FLAG': 16,
     }
 COLUMN_NAMES = BIT_MAP.keys()
 # print(COLUMN_NAMES)

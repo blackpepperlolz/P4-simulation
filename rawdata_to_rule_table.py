@@ -20,15 +20,24 @@ args = parser.parse_args()
 
 
 
+# ACL_FIELD = {
+#     'ETH_TYPE': [],
+#     'IP_PROTO': [],
+#     'IPV4_SRC': [],
+#     'IPV4_DST': [],
+#     'IPV6_SRC': [],
+#     'IPV6_DST': [],
+#     'PORT_SRC': [],
+#     'PORT_DST': [],
+#     }
+
 ACL_FIELD = {
-    'ETH_TYPE': [],
     'IP_PROTO': [],
     'IPV4_SRC': [],
     'IPV4_DST': [],
-    'IPV6_SRC': [],
-    'IPV6_DST': [],
     'PORT_SRC': [],
     'PORT_DST': [],
+    'FLAG' : []
     }
 
 df = raw_to_df(args.rawdata)
