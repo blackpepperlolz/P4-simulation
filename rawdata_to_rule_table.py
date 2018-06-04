@@ -1,3 +1,9 @@
+"""
+python rawdata_to_rule_table.py --rawdata acl1_2000_2 --ruletable acl1_rule_table_2
+"""
+
+
+
 import pandas as pd
 import numpy as np
 import functools

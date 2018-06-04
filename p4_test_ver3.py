@@ -1,7 +1,11 @@
 # coding: utf-8
 
 # In[23]:
+"""
+python p4_test_ver3.py --trans acl1_trans_2 --sizecase equal
 
+python p4_test_ver3.py --trans acl1_trans_2 --sizecase equal
+"""
 
 import pandas as pd
 import numpy as np
@@ -308,13 +312,19 @@ def decide_table_size(case, entry,memory_size,table_counts,total_rules):
 schemas = []
 weights = []
 tablesizes = []
+used_bit_counts = []
 
 filteredEntryTableMap = {}
 for key in entryTableMap :
     # print entryTableMap
     if entryTableMap[key]['weight'] > THRESHOLD :
-        schemas.append(key.replace(',','$'))
+        # schemas.append(key.replace(',','$'))
+        keys = key.split(',')
+        keys.sort()
+        schemas.append('$'.join(keys))
         weights.append(entryTableMap[key]['weight'])
+        # print(entryTableMap[key]['used_bit_count'],"++++++++++++++++++++++")
+        used_bit_counts.append(entryTableMap[key]['used_bit_count'])
         filteredEntryTableMap[key] = entryTableMap[key]
 
 
@@ -327,8 +337,12 @@ for key in entryTableMap :
 
 
 special_table_size = memory_size - np.sum(tablesizes)
-schemas.append('IP_PROTO$IPV4_SRC$IPV4_DST$PORT_SRC$PORT_DST$FLAG')
+keys = ['IP_PROTO','IPV4_SRC', 'IPV4_DST', 'PORT_SRC', 'PORT_DST', 'FLAG']
+keys.sort()
+schemas.append('$'.join(keys))
+# schemas.append('IP_PROTO$IPV4_SRC$IPV4_DST$PORT_SRC$PORT_DST$FLAG')
 weights.append(0)
+used_bit_counts.append(ENTRY_BITS)
 
 if args.case == 'equal' :
     tablesizes.append(math.floor(memory_size/table_counts))
@@ -340,12 +354,13 @@ df_org = pd.DataFrame({
     'schema': schemas,
     'weights': weights,
     'tablesize': tablesizes,
+    'oneEntrySize':used_bit_counts,
 })
 
 # print (total_rules)
 #
 # print(df_org)
 
-df_org.to_csv('org_table.csv')
+df_org.to_csv('org_table_mine.csv')
 
 sys.exit()

@@ -1,3 +1,7 @@
+"""
+python format_trans.py --analysis acl1_analysis_2 --trans acl1_trans_2
+"""
+
 import pandas as pd
 import numpy as np
 import functools
@@ -117,7 +121,7 @@ rule_table_analyed["IPV4_DST"] = rule_table_analyed["IPV4_DST"].map(ipv4_dst_f)
 # rule_table_analyed["IPV6_DST"] = rule_table_analyed["IPV6_DST"].map(ipv6_dst_f)
 rule_table_analyed["PORT_SRC"] = rule_table_analyed["PORT_SRC"].map(port_src_f)
 rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
-rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
+# rule_table_analyed["PORT_DST"] = rule_table_analyed["PORT_DST"].map(port_dst_f)
 rule_table_analyed["FLAG"] = rule_table_analyed["FLAG"].map(flag_dst_f)
 
 rule_table_analyed.insert(loc = 0, column='EST_SRC', value=zero_matrix)
