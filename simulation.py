@@ -168,14 +168,23 @@ def statistic(statisticMap,packetcount):
     sum_memorysize = 0
     sum_usedspace = 0
     sum_overflowcount = 0
+    row_count_map = {}
+    # ids = []
+    # used_row_counts = []
+
     for id in statisticMap:
         sum_memorysize = sum_memorysize + statisticMap[id]['tablesize']
         sum_usedspace = sum_usedspace + statisticMap[id]['currentusedspace']
         sum_overflowcount = sum_overflowcount + statisticMap[id]['overflow_count']
 
-    print (statisticMap)
+        row_count_map[id] = [statisticMap[id]['currentusedspace'] / statisticMap[id]['oneEntrySize']]
+        # ids.append(id)
+        # used_row_counts.append(statisticMap[id]['currentusedspace'] / statisticMap[id]['oneEntrySize'])
+
+    # print (statisticMap)
+    # print(used_row_counts)
     # sum_entrycount = float(sum_usedspace)/ statisticMap[id]['oneEntrySize']
-    return float(sum_usedspace)/sum_memorysize, float(sum_overflowcount)/packetcount
+    return float(sum_usedspace)/sum_memorysize, float(sum_overflowcount)/packetcount, pd.DataFrame(row_count_map)
     # print(records)
     # return float(sum_usedspace)/sum_memorysize, float(sum_overflowcount)/packetcount
 
@@ -187,6 +196,7 @@ def main():
     PACKETCOUNT = 10000
     ITERATION = 10
     records = np.empty((0, 2))
+    used_entry_count = pd.DataFrame()
     for _ in range(ITERATION):
         entryTableMap, statisticMap = import_df_org(args.org_t)
         for _ in range(PACKETCOUNT):
@@ -194,10 +204,13 @@ def main():
             match(entryTableMap,statisticMap,header)
 
 
-        a,b = statistic(statisticMap,PACKETCOUNT)
+        a,b,used_row_count = statistic(statisticMap,PACKETCOUNT)
+        # print(used_row_count)
+        used_entry_count = used_entry_count.append(used_row_count)
+        # print(used_entry_count)
         records = np.concatenate((records, [[a, b]]), axis=0)
     print(records)
-
+    print(used_entry_count)
     print(np.mean(records, axis=0))
     # for id in entryTableMap:
     #     print('\n\n')
